@@ -5,25 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>الأذكار اليومية - حصن المسلم</title>
 
-    <!-- PWA -->
-    <meta name="theme-color" content="#059669">
-    <meta name="description" content="الأذكار اليومية: أذكار الصباح والمساء والمسبحة الإلكترونية بنصوص مشكولة ومصادر موثقة">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="الأذكار">
-    <link rel="manifest" href="manifest.webmanifest">
-    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        ui: ['Tajawal', 'sans-serif'],
+                        quran: ['Amiri', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
 
-    <!-- Tailwind CSS (مبني محلياً ليعمل دون إنترنت) -->
-    <link rel="stylesheet" href="assets/tailwind.css">
-
-    <!-- خطوط عربية (محلية) -->
-    <link rel="stylesheet" href="assets/fonts/fonts.css">
+    <!-- خطوط عربية متعددة -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800;900&family=Noto+Naskh+Arabic:wght@400;500;600;700&family=Almarai:wght@400;700;800&family=Readex+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- أيقونات -->
-    <link rel="stylesheet" href="assets/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <style>
         /* ================= متغيرات السمات ================= */
@@ -542,13 +546,6 @@
                         ميزات إضافية
                     </h4>
                     <div id="settingToggles" class="divide-y divide-slate-100 dark:divide-slate-800"></div>
-                </div>
-
-                <!-- تثبيت التطبيق -->
-                <div id="installBox" class="hidden p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
-                    <h4 class="font-bold mb-1 text-sm flex items-center gap-2"><i class="fa-solid fa-download text-emerald-500"></i>تثبيت التطبيق</h4>
-                    <p id="installHint" class="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed mb-2">ثبّت التطبيق ليعمل بملء الشاشة ودون إنترنت.</p>
-                    <button id="installBtn" onclick="installApp()" class="hidden w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm">تثبيت على الجهاز</button>
                 </div>
 
                 <!-- تصحيحات -->
@@ -1719,7 +1716,6 @@
                 ['keepAwake', 'إبقاء الشاشة مضاءة أثناء الأذكار'],
                 ['dailyReset', 'تصفير العدادات تلقائياً مع بداية كل يوم']
             ].map(([k, l]) => toggleRow(k, l)).join('');
-            refreshInstallBox();
         }
 
         function setReciter(k) {
@@ -1857,60 +1853,6 @@
         /* ================================================================
            12. التهيئة
            ================================================================ */
-        /* ================================================================
-           13. PWA: التثبيت وخدمة العمل دون إنترنت
-           ================================================================ */
-        let deferredInstall = null;
-        const isStandalone = () => window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-        function refreshInstallBox() {
-            const box = document.getElementById('installBox');
-            if (!box) return;
-            const btn = document.getElementById('installBtn');
-            const hint = document.getElementById('installHint');
-            if (isStandalone()) { box.classList.add('hidden'); return; }
-            if (deferredInstall) {
-                box.classList.remove('hidden');
-                btn.classList.remove('hidden');
-            } else if (isIOS) {
-                box.classList.remove('hidden');
-                btn.classList.add('hidden');
-                hint.innerHTML = 'للتثبيت على الآيفون: اضغط زر المشاركة <i class="fa-solid fa-arrow-up-from-bracket"></i> في سفاري ثم اختر «إضافة إلى الشاشة الرئيسية».';
-            } else {
-                box.classList.add('hidden');
-            }
-        }
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredInstall = e;
-            refreshInstallBox();
-            showToast('يمكنك تثبيت التطبيق من الإعدادات');
-        });
-        window.addEventListener('appinstalled', () => {
-            deferredInstall = null;
-            refreshInstallBox();
-            showToast('تم تثبيت التطبيق ✓');
-        });
-        async function installApp() {
-            if (!deferredInstall) return;
-            deferredInstall.prompt();
-            try { await deferredInstall.userChoice; } catch (e) {}
-            deferredInstall = null;
-            refreshInstallBox();
-        }
-
-        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-            window.addEventListener('load', () => {
-                const hadController = !!navigator.serviceWorker.controller;
-                navigator.serviceWorker.register('./sw.js').catch(() => {});
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    showToast(hadController ? 'تم تحديث التطبيق، أعد فتحه لتفعيل التحديث' : 'التطبيق جاهز للعمل دون إنترنت ✓');
-                });
-            });
-        }
-
         window.onload = function () {
             loadState();
             applyAccent();
@@ -1929,11 +1871,6 @@
             renderCurrentDhikr(false);
             setupGesturesAndKeys();
             applyKeepAwake();
-
-            // اختصارات الشاشة الرئيسية (من manifest)
-            const act = new URLSearchParams(location.search).get('action');
-            if (act === 'tasbeeh') openModal('tasbeehModal');
-            else if (act === 'index') openModal('indexModal');
         };
     </script>
 </body>
